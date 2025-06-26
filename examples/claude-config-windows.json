@@ -1,0 +1,9 @@
+{
+  "_comment": "Windows Configuration",
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["tsx", "C:\\path\\to\\your\\cross-platform-filesystem-mcp\\src\\index.ts"]
+    }
+  }
+}

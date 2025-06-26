@@ -1,0 +1,9 @@
+{
+  "_comment": "Linux/macOS Configuration",
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["tsx", "/path/to/your/cross-platform-filesystem-mcp/src/index.ts"]
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "cross-platform-filesystem-mcp",
+  "version": "1.0.0", 
+  "description": "Cross-platform filesystem MCP server for Linux, macOS, and Windows",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  },
+  "bin": {
+    "cross-platform-filesystem-mcp": "./dist/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "filesystem",
+    "cross-platform",
+    "model-context-protocol"
+  ]
+}
