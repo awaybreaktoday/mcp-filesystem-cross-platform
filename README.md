@@ -193,7 +193,7 @@ If you're currently using the macOS-only version, here's how to migrate:
   "mcpServers": {
     "filesystem": {
       "command": "npx",
-      "args": ["tsx", "/Users/markjoyeux/mcp-servers/cross-platform-filesystem-mcp/src/index.ts"]
+      "args": ["tsx", "/path/to/cross-platform-filesystem-mcp/src/index.ts"]
     }
   }
 }
@@ -226,4 +226,4 @@ Ask Claude: "What platform am I running on?" to verify it's working.
 
 ---
 
-**Answer to your question**: Yes! This cross-platform version will work excellently on Linux environments, with full support for Linux-specific paths, permissions, and shell commands. The original macOS version would have failed on Linux due to hardcoded `/Users/` paths and macOS-specific assumptions.
+This cross-platform version provides excellent Linux support with full compatibility for Linux-specific paths, permissions, and shell commands. The original macOS version would have failed on Linux due to hardcoded `/Users/` paths and macOS-specific assumptions.
