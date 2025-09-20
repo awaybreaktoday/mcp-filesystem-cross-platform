@@ -64,6 +64,13 @@ npm run build
 npm run dev
 ```
 
+### 4. Install to a Runtime Directory (Optional)
+```bash
+./scripts/install-runtime.sh
+```
+
+By default the script installs the server into `/opt/mcp-servers/mcp-filesystem-cross-platform`. Use `--prefix` to change the parent directory or `--name` to customize the folder name.
+
 ## 📋 Platform-Specific Allowed Paths
 
 The MCP automatically detects the platform and restricts access to safe directories:
@@ -110,7 +117,7 @@ D:\             # Additional drives
   "mcpServers": {
     "filesystem": {
       "command": "npx",
-      "args": ["tsx", "/path/to/cross-platform-filesystem-mcp/src/index.ts"]
+      "args": ["tsx", "/path/to/mcp-filesystem-cross-platform/src/index.ts"]
     }
   }
 }
@@ -122,7 +129,7 @@ D:\             # Additional drives
   "mcpServers": {
     "filesystem": {
       "command": "npx",
-      "args": ["tsx", "C:\\path\\to\\cross-platform-filesystem-mcp\\src\\index.ts"]
+      "args": ["tsx", "C:\\path\\to\\mcp-filesystem-cross-platform\\src\\index.ts"]
     }
   }
 }
@@ -193,7 +200,7 @@ If you're currently using the macOS-only version, here's how to migrate:
   "mcpServers": {
     "filesystem": {
       "command": "npx",
-      "args": ["tsx", "/path/to/cross-platform-filesystem-mcp/src/index.ts"]
+      "args": ["tsx", "/path/to/mcp-filesystem-cross-platform/src/index.ts"]
     }
   }
 }
