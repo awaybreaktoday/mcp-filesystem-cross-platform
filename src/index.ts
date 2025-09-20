@@ -18,10 +18,108 @@ import { pathToFileURL } from "url";
 
 const execAsync = promisify(exec);
 
-export class CrossPlatformFilesystemMCP {
+const UNSAFE_META_CHARS = /[;&|><`$]/;
+const EXECUTABLE_SAFE_PATTERN = /^[A-Za-z0-9_\-./\\:%@\s()+=,~\[\]]+$/;
+
+function splitCommandLine(command: string): string[] {
+  const matches = command.trim().match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g);
+  return matches ? matches : [];
+}
+
+function stripOuterQuotes(value: string): string {
+  if (value.length >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
+    const inner = value.slice(1, -1);
+    return inner.replace(/\\\"/g, "\"");
+  }
+  if (value.length >= 2 && value.startsWith("'") && value.endsWith("'")) {
+    const inner = value.slice(1, -1);
+    return inner.replace(/\\'/g, "'");
+  }
+  return value;
+}
+
+function needsQuoting(value: string, platform: NodeJS.Platform): boolean {
+  if (value.length === 0) {
+    return true;
+  }
+  return /\s/.test(value);
+}
+
+function quoteForPlatform(value: string, platform: NodeJS.Platform): string {
+  if (!needsQuoting(value, platform)) {
+    return value;
+  }
+  if (platform === "win32") {
+    const escaped = value
+      .replace(/([\\]*)"/g, "$1$1\\\"")
+      .replace(/([\\]*)$/g, "$1$1");
+    return `"${escaped}"`;
+  }
+  return `'${value.replace(/'/g, "'\\''")}'`;
+}
+
+function sanitizeArgumentToken(token: string, platform: NodeJS.Platform): string {
+  const value = stripOuterQuotes(token.trim());
+  if (value.length === 0) {
+    return quoteForPlatform("", platform);
+  }
+  if (UNSAFE_META_CHARS.test(value) || /[\n\r]/.test(value)) {
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      "Command contains unsupported metacharacters"
+    );
+  }
+  return quoteForPlatform(value, platform);
+}
+
+export function ensureSafeExecutable(rawExecutable: string, platform: NodeJS.Platform): string {
+  const value = stripOuterQuotes(rawExecutable.trim());
+
+  if (!value) {
+    throw new McpError(ErrorCode.InvalidParams, "Executable is required");
+  }
+
+  if (UNSAFE_META_CHARS.test(value) || /[\n\r]/.test(value)) {
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      "Executable contains unsupported metacharacters"
+    );
+  }
+
+  if (!EXECUTABLE_SAFE_PATTERN.test(value)) {
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      "Executable path contains unsupported characters"
+    );
+  }
+
+  return quoteForPlatform(value, platform);
+}
+
+export function sanitizeCommand(command: string, platform: NodeJS.Platform): string {
+  if (!command || command.trim().length === 0) {
+    throw new McpError(ErrorCode.InvalidParams, "Command is required");
+  }
+
+  const tokens = splitCommandLine(command);
+
+  if (tokens.length === 0) {
+    throw new McpError(ErrorCode.InvalidParams, "Command is required");
+  }
+
+  const [executableToken, ...argumentTokens] = tokens;
+  const sanitizedExecutable = ensureSafeExecutable(executableToken, platform);
+  const sanitizedArguments = argumentTokens.map((token) =>
+    sanitizeArgumentToken(token, platform)
+  );
+
+  return [sanitizedExecutable, ...sanitizedArguments].join(" ").trim();
+}
+
+class CrossPlatformFilesystemMCP {
   private server: Server;
   private baseDir: string;
-  private platform: string;
+  private platform: NodeJS.Platform;
   private allowedPaths: string[];
 
   constructor() {
@@ -698,18 +796,18 @@ export class CrossPlatformFilesystemMCP {
     try {
       // Platform-aware shell selection
       const shell = this.platform === 'win32' ? 'cmd.exe' : '/bin/bash';
-      const shellFlag = this.platform === 'win32' ? '/c' : '-c';
-      
-      const { stdout, stderr } = await execAsync(command, { 
+      const sanitizedCommand = sanitizeCommand(command, this.platform);
+
+      const { stdout, stderr } = await execAsync(sanitizedCommand, {
         cwd: workingDir,
         shell: shell
       });
-      
+
       return {
         content: [
           {
             type: "text",
-            text: `**Command:** \`${command}\`\n**Working Directory:** ${workingDir}\n**Platform:** ${this.platform}\n\n` +
+            text: `**Command:** \`${sanitizedCommand}\`\n**Working Directory:** ${workingDir}\n**Platform:** ${this.platform}\n\n` +
               `**Output:**\n\`\`\`\n${stdout}\n\`\`\`` +
               (stderr ? `\n\n**Errors:**\n\`\`\`\n${stderr}\n\`\`\`` : '')
           }
@@ -738,6 +836,9 @@ export class CrossPlatformFilesystemMCP {
   }
 }
 
+const entryFileUrl = process.argv[1] ? pathToFileURL(process.argv[1]).toString() : "";
+
+if (import.meta.url === entryFileUrl) {
 const isDirectExecution = (() => {
   if (!process.argv[1]) {
     return false;
