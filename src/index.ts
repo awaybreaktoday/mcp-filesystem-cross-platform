@@ -209,12 +209,35 @@ class CrossPlatformFilesystemMCP {
     }
   }
 
-  private async getCopyCommand(source: string, destination: string): Promise<string> {
+  private quotePath(filePath: string): string {
+    if (this.platform === 'win32') {
+      const escaped = filePath.replace(/"/g, '""');
+      return `"${escaped}"`;
+    }
+
+    const escaped = filePath.replace(/(["\\\$`])/g, "\\$1");
+    return `"${escaped}"`;
+  }
+
+  private async getCopyCommand(
+    source: string,
+    destination: string,
+    isDirectory: boolean
+  ): Promise<string> {
+    const quotedSource = this.quotePath(source);
+    const quotedDestination = this.quotePath(destination);
+
     switch (this.platform) {
       case 'win32':
-        return `copy "${source}" "${destination}"`;
+        if (isDirectory) {
+          return `xcopy ${quotedSource} ${quotedDestination} /E /I /Y`;
+        }
+        return `copy ${quotedSource} ${quotedDestination}`;
       default:
-        return `cp "${source}" "${destination}"`;
+        if (isDirectory) {
+          return `cp -R ${quotedSource} ${quotedDestination}`;
+        }
+        return `cp ${quotedSource} ${quotedDestination}`;
     }
   }
 
@@ -688,14 +711,16 @@ class CrossPlatformFilesystemMCP {
   private async copyItem(source: string, destination: string) {
     const resolvedSource = this.validatePath(source);
     const resolvedDestination = this.validatePath(destination);
-    
+
     try {
       // For cross-platform compatibility, check if it's a directory
       const stats = await fs.stat(resolvedSource);
-      
+
+      await fs.mkdir(path.dirname(resolvedDestination), { recursive: true });
+
       if (stats.isDirectory()) {
         // Use shell command for directory copying
-        const command = await this.getCopyCommand(resolvedSource, resolvedDestination);
+        const command = await this.getCopyCommand(resolvedSource, resolvedDestination, true);
         await execAsync(command);
       } else {
         await fs.copyFile(resolvedSource, resolvedDestination);
@@ -814,6 +839,20 @@ class CrossPlatformFilesystemMCP {
 const entryFileUrl = process.argv[1] ? pathToFileURL(process.argv[1]).toString() : "";
 
 if (import.meta.url === entryFileUrl) {
+const isDirectExecution = (() => {
+  if (!process.argv[1]) {
+    return false;
+  }
+
+  try {
+    const invokedPath = path.resolve(process.argv[1]);
+    return pathToFileURL(invokedPath).href === import.meta.url;
+  } catch {
+    return false;
+  }
+})();
+
+if (isDirectExecution) {
   const server = new CrossPlatformFilesystemMCP();
   server.run().catch(console.error);
 }
