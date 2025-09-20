@@ -116,7 +116,7 @@ export function sanitizeCommand(command: string, platform: NodeJS.Platform): str
   return [sanitizedExecutable, ...sanitizedArguments].join(" ").trim();
 }
 
-class CrossPlatformFilesystemMCP {
+export class CrossPlatformFilesystemMCP {
   private server: Server;
   private baseDir: string;
   private platform: NodeJS.Platform;
@@ -836,23 +836,26 @@ class CrossPlatformFilesystemMCP {
   }
 }
 
-const entryFileUrl = process.argv[1] ? pathToFileURL(process.argv[1]).toString() : "";
+const entryFileUrl = process.argv[1]
+  ? pathToFileURL(process.argv[1]).toString()
+  : "";
 
 if (import.meta.url === entryFileUrl) {
-const isDirectExecution = (() => {
-  if (!process.argv[1]) {
-    return false;
-  }
+  const isDirectExecution = (() => {
+    if (!process.argv[1]) {
+      return false;
+    }
 
-  try {
-    const invokedPath = path.resolve(process.argv[1]);
-    return pathToFileURL(invokedPath).href === import.meta.url;
-  } catch {
-    return false;
-  }
-})();
+    try {
+      const invokedPath = path.resolve(process.argv[1]);
+      return pathToFileURL(invokedPath).href === import.meta.url;
+    } catch {
+      return false;
+    }
+  })();
 
-if (isDirectExecution) {
-  const server = new CrossPlatformFilesystemMCP();
-  server.run().catch(console.error);
+  if (isDirectExecution) {
+    const server = new CrossPlatformFilesystemMCP();
+    server.run().catch(console.error);
+  }
 }
