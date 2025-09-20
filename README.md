@@ -50,7 +50,7 @@ A comprehensive filesystem MCP server that works across Linux, macOS, and Window
 
 ### 1. Install Dependencies
 ```bash
-cd cross-platform-filesystem-mcp
+cd mcp-filesystem-cross-platform
 npm install
 ```
 
